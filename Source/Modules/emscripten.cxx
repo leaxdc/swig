@@ -361,7 +361,7 @@ class EMSCRIPTEN: public Language {
         if (!Strcmp(nodeType, "constructor")) {
 
           if ( (!checkAttribute(parentNode(n), "feature:emscripten_value_object", "1") ) &&
-               (!checkAttribute(parentNode(n), "feature:emscripten_interface", "1") ) )  {
+               (!checkAttribute(parentNode(n), "feature:director", "1") ) )  {
             printConstructor(n);
           }
 
