@@ -1,5 +1,6 @@
 // Users can provide their own SWIG_SHARED_PTR_TYPEMAPS macro before including this file to change the
 // visibility of the constructor and getCPtr method if desired to public if using multiple modules.
+
 #ifndef SWIG_SHARED_PTR_TYPEMAPS
 #define SWIG_SHARED_PTR_TYPEMAPS(CONST, TYPE...) SWIG_SHARED_PTR_TYPEMAPS_IMPLEMENTATION(protected, protected, CONST, TYPE)
 #endif
@@ -142,6 +143,49 @@
     long cPtr = $jnicall;
     return (cPtr == 0) ? null : new $typemap(jstype, TYPE)(cPtr, true);
   }
+
+
+// Patch for pointers in directors
+
+%typemap(javadirectorin) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE >, 
+                 SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > &,
+                 SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *,
+                 SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *& "new $typemap(jstype, TYPE)($jniinput, false)"                 
+
+%typemap(javadirectorout)  SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE >, 
+                 SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > &,
+                 SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *,
+                 SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *&  "$typemap(jstype, TYPE).getCPtr($javacall)"  
+
+%typemap(directorin, descriptor="L"#TYPE";" ) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > %{
+  *(SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > **)&$input = $1 ? new SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE >($1.get()) : new SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE >();
+%}
+
+%typemap(directorout) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > ($&1_type argp = 0) %{
+  argp = (*(SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > **)&$input);
+  if (!argp) {
+    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "Attempt to dereference null $1_type");
+    return $null;
+  }
+  $1 = *argp; 
+%}
+
+
+%typemap(directorin) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > &,
+                     SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *,
+                     SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *& %{       
+  #error "typemaps for $1_type not available"
+%}
+
+%typemap(directorout)SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > &,
+                     SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *,
+                     SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *& %{
+  #error "typemaps for $1_type not available"
+%}
+
+
+//
+
 
 // Base proxy classes
 %typemap(javabody) TYPE %{
