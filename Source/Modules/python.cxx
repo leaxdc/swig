@@ -873,7 +873,17 @@ public:
 #else
 	       tab4, "if (not static):\n",
 #endif
-	       tab4, tab4, "object.__setattr__(self, name, value)\n",
+	       NIL);
+	if (!classic) {
+	  if (!modern)
+	    Printv(f_shadow, tab4, tab4, "if _newclass:\n", tab4, NIL);
+	  Printv(f_shadow, tab4, tab4, "object.__setattr__(self, name, value)\n", NIL);
+	  if (!modern)
+	    Printv(f_shadow, tab4, tab4, "else:\n", tab4, NIL);
+	}
+	if (classic || !modern)
+	  Printv(f_shadow, tab4, tab4, "self.__dict__[name] = value\n", NIL);
+	Printv(f_shadow,
 	       tab4, "else:\n",
 	       tab4, tab4, "raise AttributeError(\"You cannot add attributes to %s\" % self)\n\n",
 	        "\n", "def _swig_setattr(self, class_type, name, value):\n", tab4, "return _swig_setattr_nondynamic(self, class_type, name, value, 0)\n\n", NIL);
@@ -3298,6 +3308,7 @@ public:
         // Generate method which registers the new constant
         Printf(f_wrappers, "SWIGINTERN PyObject *%s_swigconstant(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {\n", iname);
         Printf(f_wrappers, tab2 "PyObject *module;\n", tm);
+        Printf(f_wrappers, tab2 "PyObject *d;\n");
 	if (modernargs) {
 	  if (fastunpack) {
 	    Printf(f_wrappers, tab2 "if (!SWIG_Python_UnpackTuple(args,(char*)\"swigconstant\", 1, 1,&module)) return NULL;\n");
@@ -3307,7 +3318,7 @@ public:
 	} else {
 	  Printf(f_wrappers, tab2 "if (!PyArg_ParseTuple(args,(char*)\"O:swigconstant\", &module)) return NULL;\n");
 	}
-        Printf(f_wrappers, tab2 "PyObject *d = PyModule_GetDict(module);\n");
+        Printf(f_wrappers, tab2 "d = PyModule_GetDict(module);\n");
         Printf(f_wrappers, tab2 "if (!d) return NULL;\n");
         Printf(f_wrappers, tab2 "%s\n", tm);
         Printf(f_wrappers, tab2 "return SWIG_Py_Void();\n");
@@ -3506,8 +3517,8 @@ public:
       Printf(f_directors_h, "      return (iv != swig_inner.end() ? iv->second : false);\n");
       Printf(f_directors_h, "    }\n");
 
-      Printf(f_directors_h, "    void swig_set_inner(const char *swig_protected_method_name, bool val) const {\n");
-      Printf(f_directors_h, "      swig_inner[swig_protected_method_name] = val;\n");
+      Printf(f_directors_h, "    void swig_set_inner(const char *swig_protected_method_name, bool swig_val) const {\n");
+      Printf(f_directors_h, "      swig_inner[swig_protected_method_name] = swig_val;\n");
       Printf(f_directors_h, "    }\n");
       Printf(f_directors_h, "private:\n");
       Printf(f_directors_h, "    mutable std::map<std::string, bool> swig_inner;\n");
