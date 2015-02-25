@@ -3621,11 +3621,12 @@ public:
 
   String *canonicalizeJNIDescriptor(String *descriptor_in, Parm *p) {
     SwigType *type = Getattr(p, "type");
+
     String *descriptor_out = Copy(descriptor_in);
 
     substituteClassname(type, descriptor_out, true);
     substitutePackagePath(descriptor_out, p);
-
+        
     return descriptor_out;
   }
 
@@ -3745,10 +3746,33 @@ public:
     if (Swig_typemap_lookup("directorin", adjustedreturntypeparm, "", 0)
 	&& (cdesc = Getattr(adjustedreturntypeparm, "tmap:directorin:descriptor"))) {
 
+      printf ("tmap:directorin:descriptor: %s\n", Char(cdesc) );
+
+      // we should remove c++ namespace (Nasty hardcode used)
+
+      char *cdesc_str = Char(cdesc);
+      String *cdesc2 = NewString("");
+
+      if (strstr(cdesc_str, "L$packagepath") == cdesc_str)
+      {
+        Append(cdesc2, "L$packagepath/");
+      }
+
+      Append(cdesc2, Swig_scopename_last(cdesc) );
+      cdesc_str = Char(cdesc2);
+      if (cdesc_str[strlen(cdesc_str)-1] != ';') 
+      {
+        Append(cdesc2, ";");
+      }
+      
       // Note that in the case of polymorphic (covariant) return types, the
       // method's return type is changed to be the base of the C++ return
       // type
-      String *jnidesc_canon = canonicalizeJNIDescriptor(cdesc, adjustedreturntypeparm);
+
+      String *jnidesc_canon = canonicalizeJNIDescriptor(cdesc2, adjustedreturntypeparm);
+      Delete(cdesc2);
+      printf ("canonized descriptor: %s\n", Char(jnidesc_canon) );
+
       Append(classret_desc, jnidesc_canon);
       Delete(jnidesc_canon);
     } else {
@@ -3771,7 +3795,7 @@ public:
       String *jdesc = NULL;
       if (Swig_typemap_lookup("directorin", tp, "", 0)
 	  && (jdesc = Getattr(tp, "tmap:directorin:descriptor"))) {
-
+        
 	// Objects marshalled passing a Java class across JNI boundary use jobject - the nouse flag indicates this
 	// We need the specific Java class name instead of the generic 'Ljava/lang/Object;'
 	if (GetFlag(tp, "tmap:directorin:nouse"))
@@ -3854,6 +3878,7 @@ public:
 
     if ((tm = Swig_typemap_lookup("directorin", tp, "", 0))
 	&& (jdesc = Getattr(tp, "tmap:directorin:descriptor"))) {
+      
       String *jni_canon = canonicalizeJNIDescriptor(jdesc, tp);
       Append(jnidesc, jni_canon);
       Delete(jni_canon);
@@ -3904,7 +3929,7 @@ public:
 	    && (jdesc = Getattr(tp, "tmap:directorin:descriptor"))
 	    && (tm = Getattr(p, "tmap:directorin"))
 	    && (cdesc = Getattr(p, "tmap:directorin:descriptor"))) {
-
+    
 	  // Objects marshalled by passing a Java class across the JNI boundary use jobject as the JNI type - 
 	  // the nouse flag indicates this. We need the specific Java class name instead of the generic 'Ljava/lang/Object;'
 	  if (GetFlag(tp, "tmap:directorin:nouse"))

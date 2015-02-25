@@ -157,7 +157,7 @@
                  SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *,
                  SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *&  "$typemap(jstype, TYPE).getCPtr($javacall)"  
 
-%typemap(directorin, descriptor="L"#TYPE";" ) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > %{
+%typemap(directorin, descriptor="L$packagepath"#TYPE";" ) SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > %{  
   *(SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > **)&$input = $1 ? new SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE >($1.get()) : new SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE >();
 %}
 
