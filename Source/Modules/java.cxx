@@ -3745,9 +3745,7 @@ public:
 
     if (Swig_typemap_lookup("directorin", adjustedreturntypeparm, "", 0)
 	&& (cdesc = Getattr(adjustedreturntypeparm, "tmap:directorin:descriptor"))) {
-
-      printf ("tmap:directorin:descriptor: %s\n", Char(cdesc) );
-
+      
       // we should remove c++ namespace (Nasty hardcode used)
 
       char *cdesc_str = Char(cdesc);
@@ -3771,7 +3769,6 @@ public:
 
       String *jnidesc_canon = canonicalizeJNIDescriptor(cdesc2, adjustedreturntypeparm);
       Delete(cdesc2);
-      printf ("canonized descriptor: %s\n", Char(jnidesc_canon) );
 
       Append(classret_desc, jnidesc_canon);
       Delete(jnidesc_canon);
