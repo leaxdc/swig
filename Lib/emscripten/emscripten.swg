@@ -67,7 +67,9 @@ void  ____regopt_ ## optName ();
 %feature ("emscripten_register_vector")  ____regvec_ ## vecName %{ emscripten::register_vector<type>("vecName"); %}
 void ____regvec_ ## vecName ();
 
-/* Register Map Macro, works only for emscripten  */
+%enddef
+
+ Register Map Macro, works only for emscripten  
 
 %define EMSCRIPTEN_REGISTER_MAP(type1,type2,mapName) 
 

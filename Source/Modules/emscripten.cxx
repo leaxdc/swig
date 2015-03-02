@@ -119,9 +119,9 @@ class EMSCRIPTEN: public Language {
       }
 
       if ( Strstr(symName, "____regmap_") ) {
-        String   *regVec      = Getattr(node,"feature:emscripten_register_map");
+        String   *regMap      = Getattr(node,"feature:emscripten_register_map");
 
-        Printf(f_wrappers, "\t%s\n", regVec);
+        Printf(f_wrappers, "\t%s\n", regMap);
         return SWIG_OK;
       }
                 
