@@ -69,7 +69,7 @@ void ____regvec_ ## vecName ();
 
 %enddef
 
- Register Map Macro, works only for emscripten  
+/* Register Map Macro, works only for emscripten  */
 
 %define EMSCRIPTEN_REGISTER_MAP(type1,type2,mapName) 
 
