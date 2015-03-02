@@ -1,1 +1,1 @@
-// EMPTY
+%include <boost_shared_ptr.i>
