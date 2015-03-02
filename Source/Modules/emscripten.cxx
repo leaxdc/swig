@@ -189,6 +189,8 @@ class EMSCRIPTEN: public Language {
       if (checkAttribute(node, "feature:emscripten_smart_ptr", "1")) {
         Printf(f_wrappers, "\n\t\t.smart_ptr<%sPtr>(\"std::shared_ptr<%s>\")", 
                             className, className);
+        Printf(f_wrappers, "\n\t\t.smart_ptr<%sConstPtr>(\"std::shared_ptr<%s>\")", 
+                            className, className);
         
       }
     }
