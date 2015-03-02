@@ -102,21 +102,29 @@ class EMSCRIPTEN: public Language {
       if (checkAttribute(node, "ismember", "1")) {
         return Language::functionWrapper(node);       
       }
-      
+
+
       if ( Strstr(symName, "____regopt_") ) {
         String   *regOpt      = Getattr(node,"feature:emscripten_register_optional");
 
         Printf(f_wrappers, "\t%s\n", regOpt);
         return SWIG_OK;
       }
-      
-      if ( Strstr(symName, "____regvec_") ) {                   
+
+      if ( Strstr(symName, "____regvec_") ) {
         String   *regVec      = Getattr(node,"feature:emscripten_register_vector");
 
         Printf(f_wrappers, "\t%s\n", regVec);
         return SWIG_OK;
       }
-      
+
+      if ( Strstr(symName, "____regmap_") ) {
+        String   *regVec      = Getattr(node,"feature:emscripten_register_map");
+
+        Printf(f_wrappers, "\t%s\n", regVec);
+        return SWIG_OK;
+      }
+                
       Printf(f_wrappers, "\tfunction(\"%s\",&%s", symName, name);
 
       if (checkAttribute (node, "feature:emscripten_allow_raw_pointers", "1")) {
