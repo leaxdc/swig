@@ -213,9 +213,7 @@ class EMSCRIPTEN: public Language {
 
         Printf(f_wrappers, "%s", "\n\t\t.constructor<");
 
-        Parm *p = parms;
-
-        // String *ns = NewNamespaceForNode(n);
+        Parm *p = parms;        
 
         while (p)
         {                    
@@ -263,9 +261,7 @@ class EMSCRIPTEN: public Language {
         }
 
         Printf(f_wrappers, "%s", ")");
-    }
-
-    #include <iostream>
+    }  
 
     bool checkBaseForFeature(Node *n, const String_or_char *featureName) {
 
