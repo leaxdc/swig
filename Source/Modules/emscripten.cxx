@@ -476,7 +476,8 @@ class EMSCRIPTEN: public Language {
     virtual int  variableWrapper(Node *node) {
 
       // TODO
-      return Language::variableWrapper(node); 
+      return SWIG_OK;
+      // return Language::variableWrapper(node); 
     }
 
 };
