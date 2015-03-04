@@ -7,6 +7,7 @@
 #include <string>
 #include <iostream>
 #include <map>
+#include <set>
 #include <deque>
 
 class EMSCRIPTEN: public Language {
@@ -39,6 +40,7 @@ class EMSCRIPTEN: public Language {
       
        /* Get the module name */
        String *module = Getattr(n,"name");
+
        /* Get the output file name */
        String *outfile = Getattr(n,"outfile");
 
@@ -71,9 +73,12 @@ class EMSCRIPTEN: public Language {
        // Disable dumping runtime
        // Dump(f_runtime, f_begin);
        Dump(f_header, f_begin);       
-       Printf(f_begin, "%s(%s) { \n", "EMSCRIPTEN_BINDINGS", module);
+       
+       String *bindingsStart = NewStringf("%s(%s) { \n", "EMSCRIPTEN_BINDINGS", module);       
+       String *bindingsEnd =  NewStringf("%s\n", "} // EMSCRIPTEN_BINDINGS");       
+       Dump(bindingsStart, f_begin);
        Dump(f_wrappers, f_begin);
-       Printf(f_begin, "%s\n", "} // EMSCRIPTEN_BINDINGS");
+       Dump(bindingsEnd, f_begin);
        Wrapper_pretty_print(f_init, f_begin);
     
        /* Cleanup files */       
@@ -82,6 +87,8 @@ class EMSCRIPTEN: public Language {
        Delete(f_wrappers);
        Delete(f_init);
        Delete(f_begin);
+       Delete(bindingsStart);
+       Delete(bindingsEnd);
        
        return SWIG_OK;
     }
@@ -102,16 +109,15 @@ class EMSCRIPTEN: public Language {
       if (checkAttribute(node, "ismember", "1")) {
         return Language::functionWrapper(node);       
       }
-
-
+      
       if ( Strstr(symName, "____regopt_") ) {
         String   *regOpt      = Getattr(node,"feature:emscripten_register_optional");
 
         Printf(f_wrappers, "\t%s\n", regOpt);
         return SWIG_OK;
       }
-
-      if ( Strstr(symName, "____regvec_") ) {
+      
+      if ( Strstr(symName, "____regvec_") ) {                   
         String   *regVec      = Getattr(node,"feature:emscripten_register_vector");
 
         Printf(f_wrappers, "\t%s\n", regVec);
@@ -124,7 +130,7 @@ class EMSCRIPTEN: public Language {
         Printf(f_wrappers, "\t%s\n", regMap);
         return SWIG_OK;
       }
-                
+      
       Printf(f_wrappers, "\tfunction(\"%s\",&%s", symName, name);
 
       if (checkAttribute (node, "feature:emscripten_allow_raw_pointers", "1")) {
@@ -139,7 +145,7 @@ class EMSCRIPTEN: public Language {
 
     String *NewKind(Node *n) {
 
-      if (checkAttribute(n, "feature:emscripten_value_object", "1") ) {
+      if (checkAttribute(n, "feature:emscripten_value_object", "1") && checkBaseForFeature(n, "emscripten_value_object") ) {
         return NewStringf("%s", "value_object");      
       } else {
         return NewStringf("%s", "class_");
@@ -148,12 +154,10 @@ class EMSCRIPTEN: public Language {
 
     void printBases(Node *node) {
       
-      String   *className = Getattr(node,"name");
+      String   *className = SwigType_str(Getattr(node,"name"), 0);      
       String   *symName = Getattr(node,"sym:name");             
 
       List *baselist = Getattr(node,"bases");
-
-      // List *bases = Swig_make_inherit_list(className, baselist, "");
 
       String *kind = NewKind(node);
 
@@ -173,7 +177,7 @@ class EMSCRIPTEN: public Language {
         
         while (it.item)
         {          
-          Printf(f_wrappers, "%s", Getattr(it.item, "name" ) );
+          Printf(f_wrappers, "%s", SwigType_str(Getattr(it.item, "name" ), 0 ) );
           
           it = Next(it);
           if (it.item) {            
@@ -192,30 +196,34 @@ class EMSCRIPTEN: public Language {
 
     void printSharedPtr(Node *node) {
 
-      String   *className      = Getattr(node,"name");
+      String   *className = SwigType_str(Getattr(node,"name"), 0);      
 
       if (checkAttribute(node, "feature:emscripten_smart_ptr", "1")) {
         Printf(f_wrappers, "\n\t\t.smart_ptr<%sPtr>(\"std::shared_ptr<%s>\")", 
                             className, className);
-        Printf(f_wrappers, "\n\t\t.smart_ptr<%sConstPtr>(\"std::shared_ptr<%s>\")", 
+        Printf(f_wrappers, "\n\t\t.smart_ptr<%sConstPtr>(\"std::shared_ptr<const %s>\")", 
                             className, className);
         
       }
     }
-
+    
     void printConstructor(Node *n) {
 
-        ParmList *parms = Getattr(n, "parms");
+        ParmList *parms = Getattr(n, "parms");        
 
         Printf(f_wrappers, "%s", "\n\t\t.constructor<");
 
         Parm *p = parms;
 
+        // String *ns = NewNamespaceForNode(n);
+
         while (p)
-        {            
-          SwigType *type  = Getattr(p, "type");
-          String *typeStr = SwigType_str(type,"");
+        {                    
+          String *typeStr = SwigType_str(Getattr(p, "type"), 0);          
+          
           Printf (f_wrappers, "%s", typeStr);
+          Delete(typeStr);          
+
           p = nextSibling(p);
           if (p) {            
             Printf (f_wrappers, "%s", ", ");
@@ -225,14 +233,14 @@ class EMSCRIPTEN: public Language {
           }
         }       
 
-        Printf (f_wrappers, "%s", ">()"); 
+        Printf (f_wrappers, "%s", ">()");         
     }
 
     void printMemberFunction (Node *n ) {
         
-        String   *name      = Getattr(n,"name");        
+        String   *name      = SwigType_str(Getattr(n,"name"), 0);
         String   *symName   = Getattr(n,"sym:name");                  
-        String   *className = Getattr(parentNode(n), "name");
+        String   *className = SwigType_str(Getattr(parentNode(n),"name"), 0);      
 
         // Skip operator methods 
         if (Strstr(name, "operator "))
@@ -240,65 +248,99 @@ class EMSCRIPTEN: public Language {
           return;
         }
 
+        // Skip static members
+
+        String *storage = Getattr(n, "storage");
+        
+        if (Strstr(storage, "static")) {
+          return;
+        }
+
         Printf(f_wrappers, "\n\t\t.function(\"%s\",&%s::%s", symName, className, name); 
 
-        if (checkAttribute (n, "feature:emscripten_allow_raw_pointers", "1")) {
+        if (checkAttribute (n, "feature:emscripten_allow_raw_pointers", "1") && checkBaseForFeature(n, "emscripten_allow_raw_pointers")) {
           Printf(f_wrappers, "%s", ", emscripten::allow_raw_pointers()");
         }
 
         Printf(f_wrappers, "%s", ")");
     }
+
+    #include <iostream>
+
+    bool checkBaseForFeature(Node *n, const String_or_char *featureName) {
+
+      String *baseClassAttr = NewStringf("feature:%s:baseClass", featureName);
+      String *baseClass = Getattr(n, baseClassAttr);
+      Delete(baseClassAttr);
+
+      if (!baseClass) {
+        return true;
+      }
+
+      Node *parent = parentNode(n);
+      if (!parent) {
+        return true;
+      }
+
+      String   *parentNodeType = nodeType(parent );
+
+      if (Strcmp(parentNodeType, "class") ){
+        return true;
+      }
+
+      String *name = SwigType_str(Getattr(parent, "name") ,0);
+      String *base = SwigType_str(baseClass,0);
+
+      Replace(name, " ", "" ,DOH_REPLACE_ANY);
+      Replace(base, " ", "" ,DOH_REPLACE_ANY);
+
+
+      std::cout << "name: " << Char(name) << "; base: " << Char(SwigType_str(baseClass,0)) << std::endl;
+            
+      return !Strcmp(name, base);
+    } 
     
     void printMemberVariable (Node *n) {
         
         String   *symName   = Getattr(n,"sym:name");                          
         String   *name   = Getattr(n,"name");
-        String   *className = Getattr(parentNode(n), "name");
-        String   *baseNodeType = nodeType(parentNode(n) );
+        String   *className = SwigType_str(Getattr(parentNode(n),"name"), 0);              
 
-        if (checkAttribute(parentNode(n), "feature:emscripten_value_object", "1") ) {
+        // Skip static members
+
+        String *storage = Getattr(n, "storage");
+        
+        if (Strstr(storage, "static")) {
+          return;
+        }
+
+        if (checkAttribute(parentNode(n), "feature:emscripten_value_object", "1") && 
+          checkBaseForFeature(parentNode(n), "emscripten_value_object")) {
 
           Printf(f_wrappers, "\n\t\t.field(\"%s\"", symName);        
         }
         else {
           Printf(f_wrappers, "\n\t\t.property(\"%s\"", symName);  
-        }
-        
+        }        
 
         String   *setter = Getattr(n, "feature:emscripten_setter");
         String   *getter = Getattr(n, "feature:emscripten_getter");
+
+        // TODO: convert base class to SwigType_str
 
         if (setter || getter) {
           
           if (getter) {
 
-            String   *baseClass = Getattr(n, "feature:emscripten_getter:baseClass");
-
-            if (baseClass) {
-              Node *parent = parentNode(n);
-
-              if (parent && checkAttribute(parent, "name", baseClass) && !Strcmp(baseNodeType, "class") ){                
-                Printf (f_wrappers, ", &%s", getter);
-              }
-            }
-            else {
+            if (checkBaseForFeature(n, "emscripten_getter")) {            
               Printf (f_wrappers, ", &%s", getter);
             }
 
           }
 
           if (getter) {
-
-            String   *baseClass = Getattr(n, "feature:emscripten_setter:baseClass");
-
-            if (baseClass) {
-              Node *parent = parentNode(n);
-
-              if (parent && checkAttribute(parent, "name", baseClass) && !Strcmp(baseNodeType, "class") ){                
-                Printf (f_wrappers, ", &%s", setter);
-              }
-            }
-            else {
+       
+            if (checkBaseForFeature(n, "emscripten_setter")) {                                    
               Printf (f_wrappers, ", &%s", setter);
             }
 
@@ -325,8 +367,11 @@ class EMSCRIPTEN: public Language {
       printSharedPtr(node);
       
       typedef std::multimap<std::string, Node*> NodeMap;
+      typedef std::set<std::string> MembersToErase;
 
       NodeMap members;
+      MembersToErase membersToErase;
+
 
       // erase overloaded members
 
@@ -343,10 +388,16 @@ class EMSCRIPTEN: public Language {
 
           String   *nodeType  =  nodeType(n);
                     
+          if (membersToErase.find(Char(symName)) != membersToErase.end()) {
+            continue;
+          }
+
           NodeMap::iterator i = members.find(Char(symName) );
           if (i != members.end() && !Strcmp(nodeType, "cdecl")) {
 
             members.erase(i);
+            membersToErase.insert(i->first);
+
             continue;
           }
 
@@ -362,7 +413,8 @@ class EMSCRIPTEN: public Language {
 
         if (!Strcmp(nodeType, "constructor")) {
 
-          if (!checkAttribute(parentNode(n), "feature:emscripten_value_object", "1")) {
+          if ( (!checkAttribute(parentNode(n), "feature:emscripten_value_object", "1") || !checkBaseForFeature(parentNode(n), "emscripten_value_object" ) ) &&
+               (!checkAttribute(parentNode(n), "feature:emscripten_interface", "1") || !checkBaseForFeature(parentNode(n), "emscripten_interface" ) ) )  {
             printConstructor(n);
           }
 
@@ -374,7 +426,7 @@ class EMSCRIPTEN: public Language {
             }
             else if (checkAttribute(n, "kind", "function")) {
 
-              if (!checkAttribute(parentNode(n), "feature:emscripten_value_object", "1")) {
+              if (!checkAttribute(parentNode(n), "feature:emscripten_value_object", "1") || !checkBaseForFeature(parentNode(n), "emscripten_value_object" ) ) {
                 printMemberFunction(n);
               }
             }
@@ -406,7 +458,7 @@ class EMSCRIPTEN: public Language {
 
     virtual int  enumDeclaration(Node *node) { 
 
-      String   *className      = Getattr(node,"name");
+      String   *className = SwigType_str(Getattr(node,"name"), 0);      
       String   *symName   = Getattr(node,"sym:name");                  
       
       Printf(f_wrappers, "\n\tenum_<%s>(\"%s\")", className, symName);
@@ -416,7 +468,7 @@ class EMSCRIPTEN: public Language {
         String   *name      = Getattr(n,"name");
         String   *symName   = Getattr(n,"sym:name");                  
 
-        Printf(f_wrappers, "\n\t\t.value(\"%s\", &%s::%s)", symName, className, name);
+        Printf(f_wrappers, "\n\t\t.value(\"%s\", %s::%s)", symName, className, name);
         
       }
 
