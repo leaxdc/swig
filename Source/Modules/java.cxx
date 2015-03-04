@@ -3630,6 +3630,27 @@ public:
     return descriptor_out;
   }
 
+  String *removeCppNamespace(String *cdesc) {
+    
+      char *cdesc_str = Char(cdesc);
+      String *cdesc2 = NewString("");
+
+      if (strstr(cdesc_str, "L$packagepath") == cdesc_str && 
+          !strstr(cdesc_str, "L$packagepath/") )
+      {        
+        Append(cdesc2, "L$packagepath/");
+      }
+
+      Append(cdesc2, Swig_scopename_last(cdesc) );
+      cdesc_str = Char(cdesc2);
+      if (cdesc_str[strlen(cdesc_str)-1] != ';') 
+      {
+        Append(cdesc2, ";");
+      }
+
+      return cdesc2;
+  }
+
   /* ---------------------------------------------------------------
    * classDirectorMethod()
    *
@@ -3747,27 +3768,15 @@ public:
 	&& (cdesc = Getattr(adjustedreturntypeparm, "tmap:directorin:descriptor"))) {
       
       // we should remove c++ namespace (Nasty hardcode used)
-
-      char *cdesc_str = Char(cdesc);
-      String *cdesc2 = NewString("");
-
-      if (strstr(cdesc_str, "L$packagepath") == cdesc_str)
-      {
-        Append(cdesc2, "L$packagepath/");
-      }
-
-      Append(cdesc2, Swig_scopename_last(cdesc) );
-      cdesc_str = Char(cdesc2);
-      if (cdesc_str[strlen(cdesc_str)-1] != ';') 
-      {
-        Append(cdesc2, ";");
-      }
+      
+      String *cdesc2 = removeCppNamespace(cdesc);      
       
       // Note that in the case of polymorphic (covariant) return types, the
       // method's return type is changed to be the base of the C++ return
       // type
 
       String *jnidesc_canon = canonicalizeJNIDescriptor(cdesc2, adjustedreturntypeparm);
+      
       Delete(cdesc2);
 
       Append(classret_desc, jnidesc_canon);
@@ -3797,7 +3806,7 @@ public:
 	// We need the specific Java class name instead of the generic 'Ljava/lang/Object;'
 	if (GetFlag(tp, "tmap:directorin:nouse"))
 	  jdesc = cdesc;
-	String *jnidesc_canon = canonicalizeJNIDescriptor(jdesc, tp);
+	String *jnidesc_canon = canonicalizeJNIDescriptor(jdesc, tp);  
 	Append(jniret_desc, jnidesc_canon);
 	Delete(jnidesc_canon);
       } else {
@@ -3876,7 +3885,7 @@ public:
     if ((tm = Swig_typemap_lookup("directorin", tp, "", 0))
 	&& (jdesc = Getattr(tp, "tmap:directorin:descriptor"))) {
       
-      String *jni_canon = canonicalizeJNIDescriptor(jdesc, tp);
+      String *jni_canon = canonicalizeJNIDescriptor(jdesc, tp);    
       Append(jnidesc, jni_canon);
       Delete(jni_canon);
       Delete(tm);
@@ -3926,12 +3935,12 @@ public:
 	    && (jdesc = Getattr(tp, "tmap:directorin:descriptor"))
 	    && (tm = Getattr(p, "tmap:directorin"))
 	    && (cdesc = Getattr(p, "tmap:directorin:descriptor"))) {
-    
+        
 	  // Objects marshalled by passing a Java class across the JNI boundary use jobject as the JNI type - 
 	  // the nouse flag indicates this. We need the specific Java class name instead of the generic 'Ljava/lang/Object;'
 	  if (GetFlag(tp, "tmap:directorin:nouse"))
 	    jdesc = cdesc;
-	  String *jni_canon = canonicalizeJNIDescriptor(jdesc, tp);
+	  String *jni_canon = canonicalizeJNIDescriptor(jdesc, tp);    
 	  Append(jnidesc, jni_canon);
 	  Delete(jni_canon);
 
@@ -3964,7 +3973,9 @@ public:
 	      } else
 		Printv(imcall_args, ln, NIL);
 
-	      jni_canon = canonicalizeJNIDescriptor(cdesc, p);
+	      String *cdesc2 = removeCppNamespace(cdesc);
+        jni_canon = canonicalizeJNIDescriptor(cdesc2, p);
+        Delete(cdesc2);
 	      Append(classdesc, jni_canon);
 	      Delete(jni_canon);
 	    } else {
