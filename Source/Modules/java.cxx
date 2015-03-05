@@ -3633,22 +3633,21 @@ public:
   String *removeCppNamespace(String *cdesc) {
     
       char *cdesc_str = Char(cdesc);
-      String *cdesc2 = NewString("");
+      String *output = NewString("");
 
       if (strstr(cdesc_str, "L$packagepath") == cdesc_str && 
           !strstr(cdesc_str, "L$packagepath/") )
       {        
-        Append(cdesc2, "L$packagepath/");
+        Append(output, "L$packagepath/");
       }
 
-      Append(cdesc2, Swig_scopename_last(cdesc) );
-      cdesc_str = Char(cdesc2);
-      if (cdesc_str[strlen(cdesc_str)-1] != ';') 
-      {
-        Append(cdesc2, ";");
-      }
+      Append(output, Swig_scopename_last(cdesc) );      
+      // if (cdesc_str[strlen(cdesc_str)-1] != ';') 
+      // {
+      //   Append(output, ";");
+      // }
 
-      return cdesc2;
+      return output;
   }
 
   /* ---------------------------------------------------------------
@@ -3769,6 +3768,7 @@ public:
       
       // we should remove c++ namespace (Nasty hardcode used)
       
+      // printf ("descriptor1 %s\n", Char(cdesc));
       String *cdesc2 = removeCppNamespace(cdesc);      
       
       // Note that in the case of polymorphic (covariant) return types, the
@@ -3776,6 +3776,9 @@ public:
       // type
 
       String *jnidesc_canon = canonicalizeJNIDescriptor(cdesc2, adjustedreturntypeparm);
+
+      // printf ("precanonized descriptor1 %s\n", Char(cdesc2));
+      // printf ("canonized descriptor1 %s\n", Char(jnidesc_canon));
       
       Delete(cdesc2);
 
@@ -3973,8 +3976,11 @@ public:
 	      } else
 		Printv(imcall_args, ln, NIL);
 
-	      String *cdesc2 = removeCppNamespace(cdesc);
+	      // printf ("descriptor2 %s\n", Char(cdesc));
+        String *cdesc2 = removeCppNamespace(cdesc);
         jni_canon = canonicalizeJNIDescriptor(cdesc2, p);
+        // printf ("precanonized descriptor2 %s\n", Char(cdesc2));
+        // printf ("canonized descriptor2 %s\n", Char(jni_canon));
         Delete(cdesc2);
 	      Append(classdesc, jni_canon);
 	      Delete(jni_canon);
